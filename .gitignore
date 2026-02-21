@@ -1,0 +1,6 @@
+backend/
+node_modules/
+lottery.db
+*.db
+.env
+.DS_Store

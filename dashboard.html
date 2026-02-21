@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dashboard - ระบบตั้งลิมิตหวย</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">🎰 ระบบตั้งลิมิตหวย</div>
+        <button class="menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        <ul class="nav-menu">
+            <li><a href="dashboard.html" class="active">Dashboard</a></li>
+            <li><a href="limit-2digit.html">ลิมิต 2 ตัว</a></li>
+            <li><a href="limit-3digit.html">ลิมิต 3 ตัว</a></li>
+            <li><a href="settings.html">ตั้งค่า</a></li>
+            <li class="hide-desktop"><a href="#" onclick="logoutUser()">ออกจากระบบ</a></li>
+        </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button class="btn btn-sm btn-danger" onclick="logoutUser()">ออก</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Dashboard</h1>
+            <p>ภาพรวมรายงวด 
+                <select id="periodSelect" onchange="loadDashboard()" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ddd;">
+                </select>
+            </p>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3>ยอดรวม 2 ตัว</h3>
+                    <p class="stat-value" id="total2Digit">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-info">
+                    <h3>ยอดรวม 3 ตัวโต๊ด</h3>
+                    <p class="stat-value" id="total3DigitTode">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📉</div>
+                <div class="stat-info">
+                    <h3>ยอดรวม 3 ตัวเต็ง</h3>
+                    <p class="stat-value" id="total3DigitTeng">0</p>
+                </div>
+            </div>
+            <div class="stat-card warning">
+                <div class="stat-icon">⚠️</div>
+                <div class="stat-info">
+                    <h3>เลขใกล้ลิมิต</h3>
+                    <p class="stat-value" id="nearLimitCount">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        <div class="alerts-section">
+            <div class="section-header">
+                <h2>⚠️ แจ้งเตือนเลขใกล้ลิมิต (≥80%)</h2>
+            </div>
+            <div class="alerts-container" id="alertsContainer">
+                <p class="no-alerts">ไม่มีเลขที่ใกล้ลิมิต</p>
+            </div>
+        </div>
+
+        <!-- Quick Add Section -->
+        <div class="quick-add-section">
+            <div class="section-header">
+                <h2>➕ เพิ่มยอดด่วน</h2>
+            </div>
+            <div class="quick-add-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ประเภท</label>
+                        <select id="quickType">
+                            <option value="2digit">2 ตัว</option>
+                            <option value="3digit-tode">3 ตัวโต๊ด</option>
+                            <option value="3digit-teng">3 ตัวเต็ง</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>เลข</label>
+                        <input type="text" id="quickNumber" placeholder="เช่น 94 หรือ 123">
+                    </div>
+                    <div class="form-group">
+                        <label>ยอด (บาท)</label>
+                        <input type="number" id="quickAmount" placeholder="จำนวนเงิน">
+                    </div>
+                    <button class="btn btn-success" onclick="quickAdd()">เพิ่มยอด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="recent-section">
+            <div class="section-header">
+                <h2>📋 รายการงวดนี้</h2>
+                <button class="btn btn-sm btn-outline" onclick="showAllTransactions()">ดูทั้งหมด</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ประเภท</th>
+                            <th>เลข</th>
+                            <th>ยอด/ลิมิต</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTransactions">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        document.getElementById('currentUser').textContent = getCurrentUser();
+        initPeriodSelector();
+        
+        // Load dashboard on page ready
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadDashboard();
+        });
+    </script>
+</body>
+</html>

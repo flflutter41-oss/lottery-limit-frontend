@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ตั้งค่า - ระบบตั้งลิมิตหวย</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">🎰 ระบบตั้งลิมิตหวย</div>
+        <button class="menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        <ul class="nav-menu">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="limit-2digit.html">ลิมิต 2 ตัว</a></li>
+            <li><a href="limit-3digit.html">ลิมิต 3 ตัว</a></li>
+            <li><a href="settings.html" class="active">ตั้งค่า</a></li>
+            <li class="hide-desktop"><a href="#" onclick="logoutUser()">ออกจากระบบ</a></li>
+        </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button class="btn btn-sm btn-danger" onclick="logoutUser()">ออก</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>ตั้งค่าระบบ</h1>
+            <p>จัดการการตั้งค่าและผู้ใช้งาน</p>
+        </div>
+
+        <!-- Alert Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🔔 ตั้งค่าการแจ้งเตือน</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>แจ้งเตือนเมื่อถึง % ของลิมิต</label>
+                        <input type="number" id="alertThreshold" value="80" min="1" max="100">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveAlertSettings()">บันทึก</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Default Limits -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📊 ค่าเริ่มต้นลิมิต</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>ลิมิตเริ่มต้น 2 ตัว (บาท)</label>
+                    <input type="number" id="default2DigitLimit" value="5000">
+                </div>
+                <div class="form-group">
+                    <label>ลิมิตเริ่มต้น 3 ตัวโต๊ด (บาท)</label>
+                    <input type="number" id="default3DigitTodeLimit" value="3000">
+                </div>
+                <div class="form-group">
+                    <label>ลิมิตเริ่มต้น 3 ตัวเต็ง (บาท)</label>
+                    <input type="number" id="default3DigitTengLimit" value="2000">
+                </div>
+                <button class="btn btn-primary" onclick="saveDefaultLimits()">บันทึกค่าเริ่มต้น</button>
+            </div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🔐 เปลี่ยนรหัสผ่าน</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>รหัสผ่านปัจจุบัน</label>
+                    <input type="password" id="currentPassword" placeholder="กรอกรหัสผ่านปัจจุบัน">
+                </div>
+                <div class="form-group">
+                    <label>รหัสผ่านใหม่</label>
+                    <input type="password" id="newPassword" placeholder="กรอกรหัสผ่านใหม่">
+                </div>
+                <div class="form-group">
+                    <label>ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" id="confirmPassword" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง">
+                </div>
+                <button class="btn btn-primary" onclick="changePassword()">เปลี่ยนรหัสผ่าน</button>
+            </div>
+        </div>
+
+        <!-- User Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3>👥 จัดการผู้ใช้งาน</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ชื่อผู้ใช้ใหม่</label>
+                        <input type="text" id="newUsername" placeholder="ชื่อผู้ใช้">
+                    </div>
+                    <div class="form-group">
+                        <label>รหัสผ่าน</label>
+                        <input type="password" id="newUserPassword" placeholder="รหัสผ่าน">
+                    </div>
+                    <button class="btn btn-success" onclick="addUser()">เพิ่มผู้ใช้</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ชื่อผู้ใช้</th>
+                                <th>วันที่สร้าง</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="card">
+            <div class="card-header">
+                <h3>💾 จัดการข้อมูล</h3>
+            </div>
+            <div class="card-body">
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="exportAllData()">ส่งออก JSON</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">นำเข้า JSON</button>
+                </div>
+                <div class="btn-group" style="margin-top: 15px;">
+                    <button class="btn btn-warning" onclick="clearTodayData()">ล้างยอดทั้งหมด</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">ล้างข้อมูลทั้งหมด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Info -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🗄️ ข้อมูลฐานข้อมูล</h3>
+            </div>
+            <div class="card-body">
+                <div id="dbInfo">
+                    <p><strong>ประเภท:</strong> SQLite (Node.js Server)</p>
+                    <p><strong>การจัดเก็บ:</strong> เก็บถาวรในไฟล์ lottery.db บน server</p>
+                    <p>ข้อมูลจะถูกบันทึกอัตโนมัติและไม่สูญหาย</p>
+                </div>
+                <div id="tableStats" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        document.getElementById('currentUser').textContent = getCurrentUser();
+        
+        async function loadDbStats() {
+            try {
+                const info = await db.getDbInfo();
+                const statsDiv = document.getElementById('tableStats');
+                if (statsDiv && info.tables) {
+                    let html = '<table class="data-table"><thead><tr><th>ตาราง</th><th>จำนวนรายการ</th></tr></thead><tbody>';
+                    const tableNames = {
+                        'users': 'ผู้ใช้',
+                        'limits_2digit': 'ลิมิต 2 ตัว',
+                        'limits_3digit_tode': 'ลิมิต 3 ตัวโต๊ด',
+                        'limits_3digit_teng': 'ลิมิต 3 ตัวเต็ง',
+                        'transactions': 'ธุรกรรม'
+                    };
+                    for (const [table, count] of Object.entries(info.tables)) {
+                        html += `<tr><td>${tableNames[table] || table}</td><td>${count}</td></tr>`;
+                    }
+                    html += '</tbody></table>';
+                    statsDiv.innerHTML = html;
+                }
+            } catch (e) {
+                console.error('Error loading db stats:', e);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadSettingsPage();
+            await loadDbStats();
+        });
+    </script>
+</body>
+</html>

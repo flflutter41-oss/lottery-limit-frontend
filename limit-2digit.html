@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ลิมิต 2 ตัว - ระบบตั้งลิมิตหวย</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">🎰 ระบบตั้งลิมิตหวย</div>
+        <button class="menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        <ul class="nav-menu">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="limit-2digit.html" class="active">ลิมิต 2 ตัว</a></li>
+            <li><a href="limit-3digit.html">ลิมิต 3 ตัว</a></li>
+            <li><a href="settings.html">ตั้งค่า</a></li>
+            <li class="hide-desktop"><a href="#" onclick="logoutUser()">ออกจากระบบ</a></li>
+        </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button class="btn btn-sm btn-danger" onclick="logoutUser()">ออก</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>จัดการลิมิต 2 ตัว (00-99)</h1>
+            <p>ตั้งค่าลิมิตและเพิ่มยอดรับสำหรับเลข 2 ตัว</p>
+        </div>
+
+        <!-- Set Default Limit -->
+        <div class="card">
+            <div class="card-header">
+                <h3>⚙️ ตั้งค่าลิมิตเริ่มต้น</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ลิมิตเริ่มต้นทุกเลข (บาท)</label>
+                        <input type="number" id="defaultLimit2Digit" value="5000">
+                    </div>
+                    <button class="btn btn-primary" onclick="setDefault2DigitLimit()">ตั้งค่าทั้งหมด</button>
+                    <button class="btn btn-warning" onclick="resetAll2DigitAmounts()">รีเซ็ตยอดทั้งหมด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Amount Form -->
+        <div class="card">
+            <div class="card-header">
+                <h3>➕ เพิ่มยอดรับ</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>เลข 2 ตัว</label>
+                        <input type="text" id="number2Digit" placeholder="00-99" maxlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label>ยอด (บาท)</label>
+                        <input type="number" id="amount2Digit" placeholder="จำนวนเงิน">
+                    </div>
+                    <button class="btn btn-success" onclick="add2DigitAmount()">เพิ่มยอด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Set Individual Limit -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🎯 ตั้งลิมิตรายตัว</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>เลข 2 ตัว</label>
+                        <input type="text" id="limitNumber2Digit" placeholder="00-99" maxlength="2">
+                    </div>
+                    <div class="form-group">
+                        <label>ลิมิต (บาท)</label>
+                        <input type="number" id="limitValue2Digit" placeholder="จำนวนลิมิต">
+                    </div>
+                    <button class="btn btn-primary" onclick="set2DigitLimit()">ตั้งลิมิต</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🔍 กรองและค้นหา</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>ค้นหาเลข</label>
+                        <input type="text" id="search2Digit" placeholder="ค้นหา..." oninput="filter2DigitTable()">
+                    </div>
+                    <div class="form-group">
+                        <label>แสดง</label>
+                        <select id="filter2Digit" onchange="filter2DigitTable()">
+                            <option value="all">ทั้งหมด</option>
+                            <option value="has-amount">มียอด</option>
+                            <option value="near-limit">ใกล้ลิมิต (≥80%)</option>
+                            <option value="over-limit">เกินลิมิต</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Numbers Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📊 ตาราง 2 ตัว (00-99)</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="data-table" id="table2Digit">
+                        <thead>
+                            <tr>
+                                <th>เลข</th>
+                                <th>ยอดรับ</th>
+                                <th>ลิมิต</th>
+                                <th>%</th>
+                                <th>สถานะ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody2Digit">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>แก้ไขเลข <span id="editNumber"></span></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>ยอดรับปัจจุบัน</label>
+                    <input type="number" id="editAmount" readonly>
+                </div>
+                <div class="form-group">
+                    <label>ลิมิต</label>
+                    <input type="number" id="editLimit">
+                </div>
+                <div class="form-group">
+                    <label>ปรับยอดใหม่</label>
+                    <input type="number" id="editNewAmount" placeholder="ปล่อยว่างถ้าไม่ต้องการเปลี่ยน">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
+                <button class="btn btn-primary" onclick="saveEdit()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        document.getElementById('currentUser').textContent = getCurrentUser();
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            await load2DigitTable();
+        });
+    </script>
+</body>
+</html>

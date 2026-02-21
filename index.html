@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบตั้งลิมิตหวย - เข้าสู่ระบบ</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>🎰 ระบบตั้งลิมิตหวย</h1>
+                <p>กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">ชื่อผู้ใช้</label>
+                    <input type="text" id="username" placeholder="กรอกชื่อผู้ใช้" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">รหัสผ่าน</label>
+                    <input type="password" id="password" placeholder="กรอกรหัสผ่าน" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="loginBtn">เข้าสู่ระบบ</button>
+            </form>
+            <div class="login-footer">
+                <p>ค่าเริ่มต้น: admin / admin123</p>
+            </div>
+        </div>
+    </div>
+    <script src="config.js"></script>
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Check if already logged in
+        if (isLoggedIn()) {
+            window.location.href = 'dashboard.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            btn.disabled = true;
+            btn.textContent = 'กำลังเข้าสู่ระบบ...';
+            
+            const success = await loginAsync(username, password);
+            
+            if (success) {
+                window.location.href = 'dashboard.html';
+            } else {
+                alert('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+                btn.disabled = false;
+                btn.textContent = 'เข้าสู่ระบบ';
+            }
+        });
+    </script>
+</body>
+</html>

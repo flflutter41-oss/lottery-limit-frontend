@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ลิมิต 3 ตัว - ระบบตั้งลิมิตหวย</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">🎰 ระบบตั้งลิมิตหวย</div>
+        <button class="menu-toggle" onclick="toggleMobileMenu()">☰</button>
+        <ul class="nav-menu">
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="limit-2digit.html">ลิมิต 2 ตัว</a></li>
+            <li><a href="limit-3digit.html" class="active">ลิมิต 3 ตัว</a></li>
+            <li><a href="settings.html">ตั้งค่า</a></li>
+            <li class="hide-desktop"><a href="#" onclick="logoutUser()">ออกจากระบบ</a></li>
+        </ul>
+        <div class="nav-user">
+            <span id="currentUser"></span>
+            <button class="btn btn-sm btn-danger" onclick="logoutUser()">ออก</button>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>จัดการลิมิต 3 ตัว</h1>
+            <p>ตั้งค่าลิมิตและเพิ่มยอดรับสำหรับเลข 3 ตัว (โต๊ดและเต็ง)</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tode" onclick="switchTab('tode')">3 ตัวโต๊ด</button>
+            <button class="tab-btn" data-tab="teng" onclick="switchTab('teng')">3 ตัวเต็ง</button>
+        </div>
+
+        <!-- Tode Tab Content -->
+        <div class="tab-content active" id="tab-tode">
+            <!-- Set Default Limit -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>⚙️ ตั้งค่าลิมิตเริ่มต้น (โต๊ด)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ลิมิตเริ่มต้นทุกเลข (บาท)</label>
+                            <input type="number" id="defaultLimitTode" value="3000">
+                        </div>
+                        <button class="btn btn-primary" onclick="setDefaultTodeLimit()">ตั้งค่าทั้งหมด</button>
+                        <button class="btn btn-warning" onclick="resetAllTodeAmounts()">รีเซ็ตยอดทั้งหมด</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Amount Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>➕ เพิ่มยอดรับ (โต๊ด)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>เลข 3 ตัว</label>
+                            <input type="text" id="numberTode" placeholder="000-999" maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>ยอด (บาท)</label>
+                            <input type="number" id="amountTode" placeholder="จำนวนเงิน">
+                        </div>
+                        <button class="btn btn-success" onclick="addTodeAmount()">เพิ่มยอด</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set Individual Limit -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🎯 ตั้งลิมิตรายตัว (โต๊ด)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>เลข 3 ตัว</label>
+                            <input type="text" id="limitNumberTode" placeholder="000-999" maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>ลิมิต (บาท)</label>
+                            <input type="number" id="limitValueTode" placeholder="จำนวนลิมิต">
+                        </div>
+                        <button class="btn btn-primary" onclick="setTodeLimit()">ตั้งลิมิต</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 กรองและค้นหา</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ค้นหาเลข</label>
+                            <input type="text" id="searchTode" placeholder="ค้นหา..." oninput="filterTodeTable()">
+                        </div>
+                        <div class="form-group">
+                            <label>แสดง</label>
+                            <select id="filterTode" onchange="filterTodeTable()">
+                                <option value="all">ทั้งหมด</option>
+                                <option value="has-amount">มียอด</option>
+                                <option value="near-limit">ใกล้ลิมิต (≥80%)</option>
+                                <option value="over-limit">เกินลิมิต</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Numbers Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 ตาราง 3 ตัวโต๊ด</h3>
+                    <span class="badge">แสดงเฉพาะที่มียอด</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="data-table" id="tableTode">
+                            <thead>
+                                <tr>
+                                    <th>เลข</th>
+                                    <th>ยอดรับ</th>
+                                    <th>ลิมิต</th>
+                                    <th>%</th>
+                                    <th>สถานะ</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyTode">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teng Tab Content -->
+        <div class="tab-content" id="tab-teng">
+            <!-- Set Default Limit -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>⚙️ ตั้งค่าลิมิตเริ่มต้น (เต็ง)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ลิมิตเริ่มต้นทุกเลข (บาท)</label>
+                            <input type="number" id="defaultLimitTeng" value="2000">
+                        </div>
+                        <button class="btn btn-primary" onclick="setDefaultTengLimit()">ตั้งค่าทั้งหมด</button>
+                        <button class="btn btn-warning" onclick="resetAllTengAmounts()">รีเซ็ตยอดทั้งหมด</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Amount Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>➕ เพิ่มยอดรับ (เต็ง)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>เลข 3 ตัว</label>
+                            <input type="text" id="numberTeng" placeholder="000-999" maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>ยอด (บาท)</label>
+                            <input type="number" id="amountTeng" placeholder="จำนวนเงิน">
+                        </div>
+                        <button class="btn btn-success" onclick="addTengAmount()">เพิ่มยอด</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Set Individual Limit -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🎯 ตั้งลิมิตรายตัว (เต็ง)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>เลข 3 ตัว</label>
+                            <input type="text" id="limitNumberTeng" placeholder="000-999" maxlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label>ลิมิต (บาท)</label>
+                            <input type="number" id="limitValueTeng" placeholder="จำนวนลิมิต">
+                        </div>
+                        <button class="btn btn-primary" onclick="setTengLimit()">ตั้งลิมิต</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>🔍 กรองและค้นหา</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ค้นหาเลข</label>
+                            <input type="text" id="searchTeng" placeholder="ค้นหา..." oninput="filterTengTable()">
+                        </div>
+                        <div class="form-group">
+                            <label>แสดง</label>
+                            <select id="filterTeng" onchange="filterTengTable()">
+                                <option value="all">ทั้งหมด</option>
+                                <option value="has-amount">มียอด</option>
+                                <option value="near-limit">ใกล้ลิมิต (≥80%)</option>
+                                <option value="over-limit">เกินลิมิต</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Numbers Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📊 ตาราง 3 ตัวเต็ง</h3>
+                    <span class="badge">แสดงเฉพาะที่มียอด</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="data-table" id="tableTeng">
+                            <thead>
+                                <tr>
+                                    <th>เลข</th>
+                                    <th>ยอดรับ</th>
+                                    <th>ลิมิต</th>
+                                    <th>%</th>
+                                    <th>สถานะ</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyTeng">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="editModal3">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>แก้ไขเลข <span id="editNumber3"></span> (<span id="editType3"></span>)</h3>
+                <button class="modal-close" onclick="closeModal3()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>ยอดรับปัจจุบัน</label>
+                    <input type="number" id="editAmount3" readonly>
+                </div>
+                <div class="form-group">
+                    <label>ลิมิต</label>
+                    <input type="number" id="editLimit3">
+                </div>
+                <div class="form-group">
+                    <label>ปรับยอดใหม่</label>
+                    <input type="number" id="editNewAmount3" placeholder="ปล่อยว่างถ้าไม่ต้องการเปลี่ยน">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal3()">ยกเลิก</button>
+                <button class="btn btn-primary" onclick="saveEdit3()">บันทึก</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script>
+        checkAuth();
+        document.getElementById('currentUser').textContent = getCurrentUser();
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            await load3DigitTables();
+        });
+    </script>
+</body>
+</html>
