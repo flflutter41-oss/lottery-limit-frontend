@@ -1,5 +1,5 @@
 // ==================== CONFIGURATION ====================
-const CONFIG = {
+const APP_CONFIG = {
     ALERT_THRESHOLD: 80,
     DEFAULT_LIMIT_2DIGIT: 5000,
     DEFAULT_LIMIT_3DIGIT_TODE: 3000,
@@ -159,10 +159,10 @@ async function getSettingsAsync() {
         return await db.getSettings();
     } catch (e) {
         return {
-            alertThreshold: CONFIG.ALERT_THRESHOLD,
-            defaultLimit2Digit: CONFIG.DEFAULT_LIMIT_2DIGIT,
-            defaultLimit3DigitTode: CONFIG.DEFAULT_LIMIT_3DIGIT_TODE,
-            defaultLimit3DigitTeng: CONFIG.DEFAULT_LIMIT_3DIGIT_TENG
+            alertThreshold: APP_CONFIG.ALERT_THRESHOLD,
+            defaultLimit2Digit: APP_CONFIG.DEFAULT_LIMIT_2DIGIT,
+            defaultLimit3DigitTode: APP_CONFIG.DEFAULT_LIMIT_3DIGIT_TODE,
+            defaultLimit3DigitTeng: APP_CONFIG.DEFAULT_LIMIT_3DIGIT_TENG
         };
     }
 }
