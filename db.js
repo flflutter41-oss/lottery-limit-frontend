@@ -1,5 +1,8 @@
 // Database API Client - เชื่อมต่อกับ Node.js Server
-const API_BASE = window.location.origin;
+// ใช้ CONFIG.API_URL จาก config.js
+const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_URL) 
+    ? CONFIG.API_URL 
+    : 'https://lottery-limit-backend.onrender.com';
 
 const db = {
     // ==================== AUTH ====================
