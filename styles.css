@@ -1356,3 +1356,133 @@ body.modal-open {
         display: table-cell !important;
     }
 }
+
+/* ==================== BULK INPUT STYLES ==================== */
+#bulk2Digit,
+#bulkTode,
+#bulkTeng,
+#bulkNumbersTode,
+#bulkNumbersTeng {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.3s;
+}
+
+#bulk2Digit:focus,
+#bulkTode:focus,
+#bulkTeng:focus,
+#bulkNumbersTode:focus,
+#bulkNumbersTeng:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.bulk-result {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+}
+
+.bulk-result .bulk-success {
+    color: #059669;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #ecfdf5;
+    border-radius: 6px;
+}
+
+.bulk-result .bulk-warning {
+    color: #d97706;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #fffbeb;
+    border-radius: 6px;
+}
+
+.bulk-result .bulk-errors {
+    color: #dc2626;
+    padding: 8px;
+    background: #fef2f2;
+    border-radius: 6px;
+}
+
+/* ==================== NUMBER CHECKBOX GRID ==================== */
+.number-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    padding: 10px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.number-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.number-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.number-checkbox .number-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 32px;
+    height: 36px;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-color);
+    transition: all 0.2s ease;
+}
+
+.number-checkbox input[type="checkbox"]:checked + .number-label {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+}
+
+.number-checkbox:hover .number-label {
+    border-color: var(--primary-light);
+    transform: scale(1.05);
+}
+
+/* Responsive grid */
+@media (max-width: 768px) {
+    .number-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+    }
+    
+    .number-checkbox .number-label {
+        min-width: 28px;
+        height: 32px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .number-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}

@@ -266,6 +266,137 @@ async function add2DigitAmount() {
     hideLoading();
 }
 
+// ==================== 2-DIGIT CHECKBOX GRID FUNCTIONS ====================
+function generate2DigitGrid() {
+    const grid = document.getElementById('numberGrid2Digit');
+    if (!grid) return;
+    
+    let html = '';
+    for (let i = 0; i <= 99; i++) {
+        const number = i.toString().padStart(2, '0');
+        html += `
+            <label class="number-checkbox">
+                <input type="checkbox" value="${number}" onchange="updateSelectedCount2Digit()">
+                <span class="number-label">${number}</span>
+            </label>
+        `;
+    }
+    grid.innerHTML = html;
+}
+
+function selectAll2Digit() {
+    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = true);
+    updateSelectedCount2Digit();
+}
+
+function deselectAll2Digit() {
+    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateSelectedCount2Digit();
+}
+
+function updateSelectedCount2Digit() {
+    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]:checked');
+    const countEl = document.getElementById('selectedCount2Digit');
+    if (countEl) {
+        countEl.textContent = `เลือกแล้ว: ${checkboxes.length} เลข`;
+    }
+}
+
+function getSelected2DigitNumbers() {
+    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+async function bulkAdd2DigitAmount() {
+    const amountInput = document.getElementById('bulkAmount2Digit');
+    const resultDiv = document.getElementById('bulk2DigitResult');
+    const amount = parseFloat(amountInput?.value);
+    const selectedNumbers = getSelected2DigitNumbers();
+    
+    if (isNaN(amount) || amount <= 0) {
+        showToast('กรุณากรอกยอดที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (selectedNumbers.length === 0) {
+        showToast('กรุณาเลือกเลขอย่างน้อย 1 ตัว', 'error');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const data = await db.get2DigitLimits();
+        const settings = await getSettingsAsync();
+        
+        const successItems = [];
+        const warningItems = [];
+        
+        for (const number of selectedNumbers) {
+            if (!data[number]) {
+                data[number] = { limit: settings.defaultLimit2Digit, amount: 0 };
+            }
+            
+            data[number].amount += amount;
+            await db.update2DigitLimit(number, data[number].limit, data[number].amount);
+            
+            await db.addTransaction({
+                date: new Date().toISOString(),
+                type: '2digit',
+                number: number,
+                amount: amount,
+                totalAmount: data[number].amount,
+                limit: data[number].limit
+            });
+            
+            const percent = (data[number].amount / data[number].limit) * 100;
+            if (percent >= settings.alertThreshold) {
+                warningItems.push(`${number} (${percent.toFixed(1)}%)`);
+            } else {
+                successItems.push(number);
+            }
+        }
+        
+        // แสดงผลลัพธ์
+        let resultHtml = '';
+        if (successItems.length > 0) {
+            resultHtml += `<div class="bulk-success"><strong>✅ เพิ่มสำเร็จ ${successItems.length} เลข (เลขละ ${formatNumber(amount)} บาท):</strong><br>${successItems.join(', ')}</div>`;
+        }
+        if (warningItems.length > 0) {
+            resultHtml += `<div class="bulk-warning"><strong>⚠️ ใกล้ลิมิต ${warningItems.length} เลข:</strong><br>${warningItems.join(', ')}</div>`;
+        }
+        
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = resultHtml;
+        
+        showToast(`เพิ่มยอด ${formatNumber(amount)} บาท ให้ ${selectedNumbers.length} เลข สำเร็จ`, 'success');
+        
+        // ยกเลิกการเลือกทั้งหมด
+        deselectAll2Digit();
+        amountInput.value = '';
+        
+        if (typeof load2DigitTable === 'function') await load2DigitTable();
+        if (typeof loadDashboard === 'function') await loadDashboard();
+    } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    }
+    
+    hideLoading();
+}
+
+function clearBulk2Digit() {
+    deselectAll2Digit();
+    const amountInput = document.getElementById('bulkAmount2Digit');
+    const resultDiv = document.getElementById('bulk2DigitResult');
+    if (amountInput) amountInput.value = '';
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+        resultDiv.innerHTML = '';
+    }
+}
+
 async function load2DigitTable() {
     const tbody = document.getElementById('tbody2Digit');
     if (!tbody) return;
@@ -403,6 +534,131 @@ async function add3DigitTodeAmount() {
     hideLoading();
 }
 
+// Bulk Add for 3-Digit Tode
+function parseMultipleNumbers(input, digitCount) {
+    const numbers = [];
+    const errors = [];
+    
+    // แยกตาม , space หรือ newline
+    const items = input.split(/[\n,\s]+/).map(s => s.trim()).filter(s => s);
+    
+    for (const item of items) {
+        let number = item.padStart(digitCount, '0');
+        const maxValue = digitCount === 2 ? 99 : 999;
+        const regex = digitCount === 2 ? /^\d{2}$/ : /^\d{3}$/;
+        
+        if (!regex.test(number) || parseInt(number) > maxValue) {
+            errors.push(`${item}: เลขไม่ถูกต้อง`);
+            continue;
+        }
+        
+        numbers.push(number);
+    }
+    
+    return { numbers, errors };
+}
+
+async function bulkAddTodeAmount() {
+    const amountInput = document.getElementById('bulkAmountTode');
+    const textarea = document.getElementById('bulkNumbersTode');
+    const resultDiv = document.getElementById('bulkTodeResult');
+    const amount = parseFloat(amountInput?.value);
+    const input = textarea?.value.trim();
+    
+    if (isNaN(amount) || amount <= 0) {
+        showToast('กรุณากรอกยอดที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (!input) {
+        showToast('กรุณาพิมพ์เลขที่ต้องการ', 'error');
+        return;
+    }
+    
+    const { numbers, errors } = parseMultipleNumbers(input, 3);
+    
+    if (numbers.length === 0) {
+        showToast('ไม่พบเลขที่ถูกต้อง', 'error');
+        if (errors.length > 0) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div class="bulk-errors"><strong>❌ ข้อผิดพลาด:</strong><br>${errors.join('<br>')}</div>`;
+        }
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const data = await db.get3DigitTodeLimits();
+        const settings = await getSettingsAsync();
+        
+        const successItems = [];
+        const warningItems = [];
+        
+        for (const number of numbers) {
+            if (!data[number]) {
+                data[number] = { limit: settings.defaultLimit3DigitTode, amount: 0 };
+            }
+            
+            data[number].amount += amount;
+            await db.update3DigitTodeLimit(number, data[number].limit, data[number].amount);
+            
+            await db.addTransaction({
+                date: new Date().toISOString(),
+                type: '3digit-tode',
+                number: number,
+                amount: amount,
+                totalAmount: data[number].amount,
+                limit: data[number].limit
+            });
+            
+            const percent = (data[number].amount / data[number].limit) * 100;
+            if (percent >= settings.alertThreshold) {
+                warningItems.push(`${number} (${percent.toFixed(1)}%)`);
+            } else {
+                successItems.push(number);
+            }
+        }
+        
+        // แสดงผลลัพธ์
+        let resultHtml = '';
+        if (successItems.length > 0) {
+            resultHtml += `<div class="bulk-success"><strong>✅ เพิ่มสำเร็จ ${successItems.length} เลข (เลขละ ${formatNumber(amount)} บาท):</strong><br>${successItems.join(', ')}</div>`;
+        }
+        if (warningItems.length > 0) {
+            resultHtml += `<div class="bulk-warning"><strong>⚠️ ใกล้ลิมิต ${warningItems.length} เลข:</strong><br>${warningItems.join(', ')}</div>`;
+        }
+        if (errors.length > 0) {
+            resultHtml += `<div class="bulk-errors"><strong>❌ ข้อผิดพลาด ${errors.length} รายการ:</strong><br>${errors.join('<br>')}</div>`;
+        }
+        
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = resultHtml;
+        
+        showToast(`เพิ่มยอดโต๊ด ${formatNumber(amount)} บาท ให้ ${numbers.length} เลข สำเร็จ`, 'success');
+        textarea.value = '';
+        amountInput.value = '';
+        
+        if (typeof load3DigitTodeTable === 'function') await load3DigitTodeTable();
+    } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    }
+    
+    hideLoading();
+}
+
+function clearBulkTode() {
+    const amountInput = document.getElementById('bulkAmountTode');
+    const textarea = document.getElementById('bulkNumbersTode');
+    const resultDiv = document.getElementById('bulkTodeResult');
+    if (amountInput) amountInput.value = '';
+    if (textarea) textarea.value = '';
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+        resultDiv.innerHTML = '';
+    }
+}
+
 async function load3DigitTodeTable() {
     const tbody = document.getElementById('tbodyTode');
     if (!tbody) return;
@@ -533,6 +789,108 @@ async function add3DigitTengAmount() {
     }
     
     hideLoading();
+}
+
+// Bulk Add for 3-Digit Teng
+async function bulkAddTengAmount() {
+    const amountInput = document.getElementById('bulkAmountTeng');
+    const textarea = document.getElementById('bulkNumbersTeng');
+    const resultDiv = document.getElementById('bulkTengResult');
+    const amount = parseFloat(amountInput?.value);
+    const input = textarea?.value.trim();
+    
+    if (isNaN(amount) || amount <= 0) {
+        showToast('กรุณากรอกยอดที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    if (!input) {
+        showToast('กรุณาพิมพ์เลขที่ต้องการ', 'error');
+        return;
+    }
+    
+    const { numbers, errors } = parseMultipleNumbers(input, 3);
+    
+    if (numbers.length === 0) {
+        showToast('ไม่พบเลขที่ถูกต้อง', 'error');
+        if (errors.length > 0) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div class="bulk-errors"><strong>❌ ข้อผิดพลาด:</strong><br>${errors.join('<br>')}</div>`;
+        }
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const data = await db.get3DigitTengLimits();
+        const settings = await getSettingsAsync();
+        
+        const successItems = [];
+        const warningItems = [];
+        
+        for (const number of numbers) {
+            if (!data[number]) {
+                data[number] = { limit: settings.defaultLimit3DigitTeng, amount: 0 };
+            }
+            
+            data[number].amount += amount;
+            await db.update3DigitTengLimit(number, data[number].limit, data[number].amount);
+            
+            await db.addTransaction({
+                date: new Date().toISOString(),
+                type: '3digit-teng',
+                number: number,
+                amount: amount,
+                totalAmount: data[number].amount,
+                limit: data[number].limit
+            });
+            
+            const percent = (data[number].amount / data[number].limit) * 100;
+            if (percent >= settings.alertThreshold) {
+                warningItems.push(`${number} (${percent.toFixed(1)}%)`);
+            } else {
+                successItems.push(number);
+            }
+        }
+        
+        // แสดงผลลัพธ์
+        let resultHtml = '';
+        if (successItems.length > 0) {
+            resultHtml += `<div class="bulk-success"><strong>✅ เพิ่มสำเร็จ ${successItems.length} เลข (เลขละ ${formatNumber(amount)} บาท):</strong><br>${successItems.join(', ')}</div>`;
+        }
+        if (warningItems.length > 0) {
+            resultHtml += `<div class="bulk-warning"><strong>⚠️ ใกล้ลิมิต ${warningItems.length} เลข:</strong><br>${warningItems.join(', ')}</div>`;
+        }
+        if (errors.length > 0) {
+            resultHtml += `<div class="bulk-errors"><strong>❌ ข้อผิดพลาด ${errors.length} รายการ:</strong><br>${errors.join('<br>')}</div>`;
+        }
+        
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = resultHtml;
+        
+        showToast(`เพิ่มยอดเต็ง ${formatNumber(amount)} บาท ให้ ${numbers.length} เลข สำเร็จ`, 'success');
+        textarea.value = '';
+        amountInput.value = '';
+        
+        if (typeof load3DigitTengTable === 'function') await load3DigitTengTable();
+    } catch (e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    }
+    
+    hideLoading();
+}
+
+function clearBulkTeng() {
+    const amountInput = document.getElementById('bulkAmountTeng');
+    const textarea = document.getElementById('bulkNumbersTeng');
+    const resultDiv = document.getElementById('bulkTengResult');
+    if (amountInput) amountInput.value = '';
+    if (textarea) textarea.value = '';
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+        resultDiv.innerHTML = '';
+    }
 }
 
 async function load3DigitTengTable() {

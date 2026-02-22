@@ -63,7 +63,7 @@
             <!-- Add Amount Form -->
             <div class="card">
                 <div class="card-header">
-                    <h3>➕ เพิ่มยอดรับ (โต๊ด)</h3>
+                    <h3>➕ เพิ่มยอดรับ (โต๊ด - ทีละเลข)</h3>
                 </div>
                 <div class="card-body">
                     <div class="form-row">
@@ -77,6 +77,32 @@
                         </div>
                         <button class="btn btn-success" onclick="addTodeAmount()">เพิ่มยอด</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Bulk Add Amount Form (Tode) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 เพิ่มยอดหลายเลขพร้อมกัน (โต๊ด)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row" style="margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>ยอดที่ต้องการเพิ่ม (บาท)</label>
+                            <input type="number" id="bulkAmountTode" placeholder="จำนวนเงิน" style="width: 150px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>พิมพ์เลขหลายตัว (คั่นด้วย , space หรือ ขึ้นบรรทัดใหม่)</label>
+                        <textarea id="bulkNumbersTode" rows="3" placeholder="ตัวอย่าง: 123, 456, 789, 012
+หรือ
+123 456 789 012"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <button class="btn btn-success" onclick="bulkAddTodeAmount()">เพิ่มยอดทั้งหมด</button>
+                        <button class="btn btn-secondary" onclick="clearBulkTode()">ล้างข้อมูล</button>
+                    </div>
+                    <div id="bulkTodeResult" class="bulk-result" style="display:none;"></div>
                 </div>
             </div>
 
@@ -173,7 +199,7 @@
             <!-- Add Amount Form -->
             <div class="card">
                 <div class="card-header">
-                    <h3>➕ เพิ่มยอดรับ (เต็ง)</h3>
+                    <h3>➕ เพิ่มยอดรับ (เต็ง - ทีละเลข)</h3>
                 </div>
                 <div class="card-body">
                     <div class="form-row">
@@ -187,6 +213,32 @@
                         </div>
                         <button class="btn btn-success" onclick="addTengAmount()">เพิ่มยอด</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Bulk Add Amount Form (Teng) -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>📋 เพิ่มยอดหลายเลขพร้อมกัน (เต็ง)</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row" style="margin-bottom: 10px;">
+                        <div class="form-group">
+                            <label>ยอดที่ต้องการเพิ่ม (บาท)</label>
+                            <input type="number" id="bulkAmountTeng" placeholder="จำนวนเงิน" style="width: 150px;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>พิมพ์เลขหลายตัว (คั่นด้วย , space หรือ ขึ้นบรรทัดใหม่)</label>
+                        <textarea id="bulkNumbersTeng" rows="3" placeholder="ตัวอย่าง: 123, 456, 789, 012
+หรือ
+123 456 789 012"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <button class="btn btn-success" onclick="bulkAddTengAmount()">เพิ่มยอดทั้งหมด</button>
+                        <button class="btn btn-secondary" onclick="clearBulkTeng()">ล้างข้อมูล</button>
+                    </div>
+                    <div id="bulkTengResult" class="bulk-result" style="display:none;"></div>
                 </div>
             </div>
 
