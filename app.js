@@ -1090,19 +1090,40 @@ async function quickAdd() {
     const amountInput = document.getElementById('quickAmount');
     
     const type = typeSelect.value;
-    const number = numberInput.value.trim();
+    const input = numberInput.value.trim();
     const amount = parseFloat(amountInput.value);
     
-    const expectedLength = type === '2digit' ? 2 : 3;
-    const paddedNumber = number.padStart(expectedLength, '0');
-    
-    if (number.length > expectedLength || !/^\d+$/.test(number)) {
-        showToast(`กรุณากรอกเลข ${expectedLength} ตัวที่ถูกต้อง`, 'error');
+    if (!input) {
+        showToast('กรุณาพิมพ์เลขที่ต้องการ', 'error');
         return;
     }
     
     if (isNaN(amount) || amount <= 0) {
         showToast('กรุณากรอกจำนวนเงินที่ถูกต้อง', 'error');
+        return;
+    }
+    
+    const expectedLength = type === '2digit' ? 2 : 3;
+    
+    // แยกเลขหลายตัว (คั่นด้วย space, comma, newline)
+    const items = input.split(/[\n,\s]+/).map(s => s.trim()).filter(s => s);
+    const numbers = [];
+    const errors = [];
+    
+    for (const item of items) {
+        const paddedNumber = item.padStart(expectedLength, '0');
+        const maxValue = expectedLength === 2 ? 99 : 999;
+        const regex = expectedLength === 2 ? /^\d{2}$/ : /^\d{3}$/;
+        
+        if (!regex.test(paddedNumber) || parseInt(paddedNumber) > maxValue) {
+            errors.push(item);
+            continue;
+        }
+        numbers.push(paddedNumber);
+    }
+    
+    if (numbers.length === 0) {
+        showToast(`ไม่พบเลข ${expectedLength} ตัวที่ถูกต้อง`, 'error');
         return;
     }
     
@@ -1115,38 +1136,50 @@ async function quickAdd() {
         if (type === '2digit') {
             data = await db.get2DigitLimits();
             updateFn = db.update2DigitLimit.bind(db);
-            defaultLimit = settings.defaultLimit2Digit;
+            defaultLimit = settings.defaultLimit2Digit || 5000;
         } else if (type === '3digit-tode') {
             data = await db.get3DigitTodeLimits();
             updateFn = db.update3DigitTodeLimit.bind(db);
-            defaultLimit = settings.defaultLimit3DigitTode;
+            defaultLimit = settings.defaultLimit3DigitTode || 3000;
         } else {
             data = await db.get3DigitTengLimits();
             updateFn = db.update3DigitTengLimit.bind(db);
-            defaultLimit = settings.defaultLimit3DigitTeng;
+            defaultLimit = settings.defaultLimit3DigitTeng || 2000;
         }
         
-        if (!data[paddedNumber]) {
-            data[paddedNumber] = { limit: defaultLimit, amount: 0 };
+        const successItems = [];
+        const warningItems = [];
+        
+        for (const paddedNumber of numbers) {
+            if (!data[paddedNumber]) {
+                data[paddedNumber] = { limit: defaultLimit, amount: 0 };
+            }
+            
+            data[paddedNumber].amount += amount;
+            await updateFn(paddedNumber, data[paddedNumber].limit, data[paddedNumber].amount);
+            
+            await db.addTransaction({
+                date: new Date().toISOString(),
+                type: type,
+                number: paddedNumber,
+                amount: amount,
+                totalAmount: data[paddedNumber].amount,
+                limit: data[paddedNumber].limit
+            });
+            
+            const percent = (data[paddedNumber].amount / data[paddedNumber].limit) * 100;
+            if (percent >= (settings.alertThreshold || 80)) {
+                warningItems.push(`${paddedNumber} (${percent.toFixed(1)}%)`);
+            } else {
+                successItems.push(paddedNumber);
+            }
         }
         
-        data[paddedNumber].amount += amount;
-        await updateFn(paddedNumber, data[paddedNumber].limit, data[paddedNumber].amount);
-        
-        await db.addTransaction({
-            date: new Date().toISOString(),
-            type: type,
-            number: paddedNumber,
-            amount: amount,
-            totalAmount: data[paddedNumber].amount,
-            limit: data[paddedNumber].limit
-        });
-        
-        const percent = (data[paddedNumber].amount / data[paddedNumber].limit) * 100;
-        if (percent >= settings.alertThreshold) {
-            showToast(`⚠️ เลข ${paddedNumber} ใกล้ถึงลิมิต! (${percent.toFixed(1)}%)`, 'warning');
+        // แสดงผลลัพธ์
+        if (warningItems.length > 0) {
+            showToast(`⚠️ เพิ่มยอด ${numbers.length} เลข - ใกล้ลิมิต: ${warningItems.join(', ')}`, 'warning');
         } else {
-            showToast(`เพิ่มยอดเลข ${paddedNumber} สำเร็จ`, 'success');
+            showToast(`เพิ่มยอด ${formatNumber(amount)} บาท ให้ ${numbers.length} เลข สำเร็จ`, 'success');
         }
         
         numberInput.value = '';
