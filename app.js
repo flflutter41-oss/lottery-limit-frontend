@@ -266,62 +266,53 @@ async function add2DigitAmount() {
     hideLoading();
 }
 
-// ==================== 2-DIGIT CHECKBOX GRID FUNCTIONS ====================
-function generate2DigitGrid() {
-    const grid = document.getElementById('numberGrid2Digit');
-    if (!grid) return;
+// ==================== 2-DIGIT MULTIPLE INPUT FUNCTIONS ====================
+function parseMultipleNumbers2Digit(input) {
+    const numbers = [];
+    const errors = [];
     
-    let html = '';
-    for (let i = 0; i <= 99; i++) {
-        const number = i.toString().padStart(2, '0');
-        html += `
-            <label class="number-checkbox">
-                <input type="checkbox" value="${number}" onchange="updateSelectedCount2Digit()">
-                <span class="number-label">${number}</span>
-            </label>
-        `;
+    // แยกตาม , space หรือ newline
+    const items = input.split(/[\n,\s]+/).map(s => s.trim()).filter(s => s);
+    
+    for (const item of items) {
+        let number = item.padStart(2, '0');
+        
+        if (!/^\d{2}$/.test(number) || parseInt(number) > 99) {
+            errors.push(`${item}: เลขไม่ถูกต้อง`);
+            continue;
+        }
+        
+        numbers.push(number);
     }
-    grid.innerHTML = html;
+    
+    return { numbers, errors };
 }
 
-function selectAll2Digit() {
-    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]');
-    checkboxes.forEach(cb => cb.checked = true);
-    updateSelectedCount2Digit();
-}
-
-function deselectAll2Digit() {
-    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]');
-    checkboxes.forEach(cb => cb.checked = false);
-    updateSelectedCount2Digit();
-}
-
-function updateSelectedCount2Digit() {
-    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]:checked');
-    const countEl = document.getElementById('selectedCount2Digit');
-    if (countEl) {
-        countEl.textContent = `เลือกแล้ว: ${checkboxes.length} เลข`;
-    }
-}
-
-function getSelected2DigitNumbers() {
-    const checkboxes = document.querySelectorAll('#numberGrid2Digit input[type="checkbox"]:checked');
-    return Array.from(checkboxes).map(cb => cb.value);
-}
-
-async function bulkAdd2DigitAmount() {
-    const amountInput = document.getElementById('bulkAmount2Digit');
+async function add2DigitAmountMultiple() {
+    const numbersInput = document.getElementById('numbers2Digit');
+    const amountInput = document.getElementById('amount2Digit');
     const resultDiv = document.getElementById('bulk2DigitResult');
+    const input = numbersInput?.value.trim();
     const amount = parseFloat(amountInput?.value);
-    const selectedNumbers = getSelected2DigitNumbers();
+    
+    if (!input) {
+        showToast('กรุณาพิมพ์เลขที่ต้องการ', 'error');
+        return;
+    }
     
     if (isNaN(amount) || amount <= 0) {
         showToast('กรุณากรอกยอดที่ถูกต้อง', 'error');
         return;
     }
     
-    if (selectedNumbers.length === 0) {
-        showToast('กรุณาเลือกเลขอย่างน้อย 1 ตัว', 'error');
+    const { numbers, errors } = parseMultipleNumbers2Digit(input);
+    
+    if (numbers.length === 0) {
+        showToast('ไม่พบเลขที่ถูกต้อง', 'error');
+        if (errors.length > 0 && resultDiv) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<div class="bulk-errors"><strong>❌ ข้อผิดพลาด:</strong><br>${errors.join('<br>')}</div>`;
+        }
         return;
     }
     
@@ -334,9 +325,9 @@ async function bulkAdd2DigitAmount() {
         const successItems = [];
         const warningItems = [];
         
-        for (const number of selectedNumbers) {
+        for (const number of numbers) {
             if (!data[number]) {
-                data[number] = { limit: settings.defaultLimit2Digit, amount: 0 };
+                data[number] = { limit: settings.defaultLimit2Digit || 5000, amount: 0 };
             }
             
             data[number].amount += amount;
@@ -352,7 +343,7 @@ async function bulkAdd2DigitAmount() {
             });
             
             const percent = (data[number].amount / data[number].limit) * 100;
-            if (percent >= settings.alertThreshold) {
+            if (percent >= (settings.alertThreshold || 80)) {
                 warningItems.push(`${number} (${percent.toFixed(1)}%)`);
             } else {
                 successItems.push(number);
@@ -360,21 +351,26 @@ async function bulkAdd2DigitAmount() {
         }
         
         // แสดงผลลัพธ์
-        let resultHtml = '';
-        if (successItems.length > 0) {
-            resultHtml += `<div class="bulk-success"><strong>✅ เพิ่มสำเร็จ ${successItems.length} เลข (เลขละ ${formatNumber(amount)} บาท):</strong><br>${successItems.join(', ')}</div>`;
+        if (resultDiv) {
+            let resultHtml = '';
+            if (successItems.length > 0) {
+                resultHtml += `<div class="bulk-success"><strong>✅ เพิ่มสำเร็จ ${successItems.length} เลข (เลขละ ${formatNumber(amount)} บาท):</strong><br>${successItems.join(', ')}</div>`;
+            }
+            if (warningItems.length > 0) {
+                resultHtml += `<div class="bulk-warning"><strong>⚠️ ใกล้ลิมิต ${warningItems.length} เลข:</strong><br>${warningItems.join(', ')}</div>`;
+            }
+            if (errors.length > 0) {
+                resultHtml += `<div class="bulk-errors"><strong>❌ ข้อผิดพลาด ${errors.length} รายการ:</strong><br>${errors.join('<br>')}</div>`;
+            }
+            
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = resultHtml;
         }
-        if (warningItems.length > 0) {
-            resultHtml += `<div class="bulk-warning"><strong>⚠️ ใกล้ลิมิต ${warningItems.length} เลข:</strong><br>${warningItems.join(', ')}</div>`;
-        }
         
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = resultHtml;
+        showToast(`เพิ่มยอด ${formatNumber(amount)} บาท ให้ ${numbers.length} เลข สำเร็จ`, 'success');
         
-        showToast(`เพิ่มยอด ${formatNumber(amount)} บาท ให้ ${selectedNumbers.length} เลข สำเร็จ`, 'success');
-        
-        // ยกเลิกการเลือกทั้งหมด
-        deselectAll2Digit();
+        // ล้างข้อมูล
+        numbersInput.value = '';
         amountInput.value = '';
         
         if (typeof load2DigitTable === 'function') await load2DigitTable();
@@ -384,17 +380,6 @@ async function bulkAdd2DigitAmount() {
     }
     
     hideLoading();
-}
-
-function clearBulk2Digit() {
-    deselectAll2Digit();
-    const amountInput = document.getElementById('bulkAmount2Digit');
-    const resultDiv = document.getElementById('bulk2DigitResult');
-    if (amountInput) amountInput.value = '';
-    if (resultDiv) {
-        resultDiv.style.display = 'none';
-        resultDiv.innerHTML = '';
-    }
 }
 
 async function load2DigitTable() {

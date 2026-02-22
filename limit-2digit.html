@@ -52,46 +52,22 @@
             </div>
         </div>
 
-        <!-- Add Amount Form -->
+        <!-- Add Amount Form - Multiple Numbers -->
         <div class="card">
             <div class="card-header">
-                <h3>➕ เพิ่มยอดรับ (ทีละเลข)</h3>
+                <h3>➕ เพิ่มยอดรับ</h3>
             </div>
             <div class="card-body">
+                <div class="form-group">
+                    <label>เลข 2 ตัว (พิมพ์หลายเลขได้ คั่นด้วย space หรือ ,)</label>
+                    <input type="text" id="numbers2Digit" placeholder="เช่น 23 24 25 26 27 หรือ 23,24,25">
+                </div>
+                <div class="form-group">
+                    <label>ยอด (บาท)</label>
+                    <input type="number" id="amount2Digit" placeholder="จำนวนเงิน">
+                </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label>เลข 2 ตัว</label>
-                        <input type="text" id="number2Digit" placeholder="00-99" maxlength="2">
-                    </div>
-                    <div class="form-group">
-                        <label>ยอด (บาท)</label>
-                        <input type="number" id="amount2Digit" placeholder="จำนวนเงิน">
-                    </div>
-                    <button class="btn btn-success" onclick="add2DigitAmount()">เพิ่มยอด</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bulk Add Amount Form - Checkbox Style -->
-        <div class="card">
-            <div class="card-header">
-                <h3>📋 เพิ่มยอดหลายเลขพร้อมกัน</h3>
-            </div>
-            <div class="card-body">
-                <div class="form-row" style="margin-bottom: 15px;">
-                    <div class="form-group">
-                        <label>ยอดที่ต้องการเพิ่ม (บาท)</label>
-                        <input type="number" id="bulkAmount2Digit" placeholder="จำนวนเงิน" style="width: 150px;">
-                    </div>
-                    <button class="btn btn-sm btn-secondary" onclick="selectAll2Digit()">เลือกทั้งหมด</button>
-                    <button class="btn btn-sm btn-secondary" onclick="deselectAll2Digit()">ยกเลิกทั้งหมด</button>
-                </div>
-                <div class="number-grid" id="numberGrid2Digit">
-                    <!-- จะถูก generate ด้วย JS -->
-                </div>
-                <div style="margin-top: 15px;">
-                    <span id="selectedCount2Digit" style="margin-right: 15px; color: var(--primary-color); font-weight: 500;">เลือกแล้ว: 0 เลข</span>
-                    <button class="btn btn-success" onclick="bulkAdd2DigitAmount()">เพิ่มยอดเลขที่เลือก</button>
+                    <button class="btn btn-success" onclick="add2DigitAmountMultiple()">เพิ่มยอด</button>
                 </div>
                 <div id="bulk2DigitResult" class="bulk-result" style="display:none;"></div>
             </div>
@@ -202,7 +178,6 @@
         document.getElementById('currentUser').textContent = getCurrentUser();
         
         document.addEventListener('DOMContentLoaded', async function() {
-            generate2DigitGrid();
             await load2DigitTable();
         });
     </script>

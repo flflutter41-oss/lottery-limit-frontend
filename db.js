@@ -4,6 +4,75 @@ const API_BASE = (typeof CONFIG !== 'undefined' && CONFIG.API_URL)
     ? CONFIG.API_URL 
     : 'https://lottery-limit-backend.onrender.com';
 
+// ==================== RETRY & CACHE UTILITIES ====================
+const apiCache = new Map();
+const CACHE_TTL = 5000; // 5 seconds cache
+
+async function fetchWithRetry(url, options = {}, retries = 3, delay = 1000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const res = await fetch(url, options);
+            
+            // ถ้าเจอ 429 (Too Many Requests) ให้รอแล้วลองใหม่
+            if (res.status === 429) {
+                const waitTime = delay * Math.pow(2, i); // Exponential backoff
+                console.warn(`Rate limited (429). Retrying in ${waitTime}ms... (attempt ${i + 1}/${retries})`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+            }
+            
+            // ถ้า response ไม่ ok แต่ไม่ใช่ 429
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
+            return res;
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            const waitTime = delay * Math.pow(2, i);
+            console.warn(`Request failed. Retrying in ${waitTime}ms...`, error.message);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+    throw new Error('Max retries exceeded');
+}
+
+async function cachedFetch(url, options = {}, useCache = true) {
+    const cacheKey = url + JSON.stringify(options);
+    
+    // ถ้าเป็น GET request และมี cache ที่ยังไม่หมดอายุ
+    if (useCache && (!options.method || options.method === 'GET')) {
+        const cached = apiCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+            return cached.data;
+        }
+    }
+    
+    try {
+        const res = await fetchWithRetry(url, options);
+        const data = await res.json();
+        
+        // Cache GET requests only
+        if (!options.method || options.method === 'GET') {
+            apiCache.set(cacheKey, { data, timestamp: Date.now() });
+        } else {
+            // Invalidate related caches on mutation
+            apiCache.clear();
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('API Error:', error);
+        // Return safe defaults based on endpoint
+        if (url.includes('/limits/2digit')) return {};
+        if (url.includes('/limits/3digit-tode')) return {};
+        if (url.includes('/limits/3digit-teng')) return {};
+        if (url.includes('/settings')) return { alertThreshold: 80, defaultLimit2Digit: 5000, defaultLimit3DigitTode: 3000, defaultLimit3DigitTeng: 2000 };
+        if (url.includes('/transactions')) return [];
+        throw error;
+    }
+}
+
 const db = {
     // ==================== AUTH ====================
     async login(username, password) {
@@ -16,198 +85,177 @@ const db = {
     },
 
     async getUsers() {
-        const res = await fetch(`${API_BASE}/api/users`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/users`);
     },
 
     async addUser(username, password) {
-        const res = await fetch(`${API_BASE}/api/users`, {
+        return cachedFetch(`${API_BASE}/api/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
-        return res.json();
     },
 
     async updatePassword(username, password) {
-        const res = await fetch(`${API_BASE}/api/users/${username}`, {
+        return cachedFetch(`${API_BASE}/api/users/${username}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password })
         });
-        return res.json();
     },
 
     async deleteUser(username) {
-        const res = await fetch(`${API_BASE}/api/users/${username}`, {
+        return cachedFetch(`${API_BASE}/api/users/${username}`, {
             method: 'DELETE'
         });
-        return res.json();
     },
 
     // ==================== SETTINGS ====================
     async getSettings() {
-        const res = await fetch(`${API_BASE}/api/settings`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/settings`);
     },
 
     async saveSettings(settings) {
-        const res = await fetch(`${API_BASE}/api/settings`, {
+        return cachedFetch(`${API_BASE}/api/settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(settings)
         });
-        return res.json();
     },
 
     // ==================== 2-DIGIT ====================
     async get2DigitLimits() {
-        const res = await fetch(`${API_BASE}/api/limits/2digit`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/limits/2digit`);
     },
 
     async update2DigitLimit(number, limit, amount) {
-        const res = await fetch(`${API_BASE}/api/limits/2digit/${number}`, {
+        return cachedFetch(`${API_BASE}/api/limits/2digit/${number}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ limit, amount })
-        });
-        return res.json();
+        }, false);
     },
 
     async save2DigitLimits(data) {
-        const res = await fetch(`${API_BASE}/api/limits/2digit`, {
+        return cachedFetch(`${API_BASE}/api/limits/2digit`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        });
-        return res.json();
+        }, false);
     },
 
     // ==================== 3-DIGIT TODE ====================
     async get3DigitTodeLimits() {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-tode`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/limits/3digit-tode`);
     },
 
     async update3DigitTodeLimit(number, limit, amount) {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-tode/${number}`, {
+        return cachedFetch(`${API_BASE}/api/limits/3digit-tode/${number}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ limit, amount })
-        });
-        return res.json();
+        }, false);
     },
 
     async delete3DigitTode(number) {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-tode/${number}`, {
+        return cachedFetch(`${API_BASE}/api/limits/3digit-tode/${number}`, {
             method: 'DELETE'
-        });
-        return res.json();
+        }, false);
     },
 
     async save3DigitTodeLimits(data) {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-tode`, {
+        return cachedFetch(`${API_BASE}/api/limits/3digit-tode`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        });
-        return res.json();
+        }, false);
     },
 
     // ==================== 3-DIGIT TENG ====================
     async get3DigitTengLimits() {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-teng`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/limits/3digit-teng`);
     },
 
     async update3DigitTengLimit(number, limit, amount) {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-teng/${number}`, {
+        return cachedFetch(`${API_BASE}/api/limits/3digit-teng/${number}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ limit, amount })
-        });
-        return res.json();
+        }, false);
     },
 
     async delete3DigitTeng(number) {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-teng/${number}`, {
+        return cachedFetch(`${API_BASE}/api/limits/3digit-teng/${number}`, {
             method: 'DELETE'
-        });
-        return res.json();
+        }, false);
     },
 
     async save3DigitTengLimits(data) {
-        const res = await fetch(`${API_BASE}/api/limits/3digit-teng`, {
+        return cachedFetch(`${API_BASE}/api/limits/3digit-teng`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        });
-        return res.json();
+        }, false);
     },
 
     // ==================== TRANSACTIONS ====================
     async getTransactions() {
-        const res = await fetch(`${API_BASE}/api/transactions`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/transactions`);
     },
 
     async addTransaction(transaction) {
-        const res = await fetch(`${API_BASE}/api/transactions`, {
+        return cachedFetch(`${API_BASE}/api/transactions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(transaction)
-        });
-        return res.json();
+        }, false);
     },
 
     async deleteTransaction(id) {
-        const res = await fetch(`${API_BASE}/api/transactions/${id}`, {
+        return cachedFetch(`${API_BASE}/api/transactions/${id}`, {
             method: 'DELETE'
-        });
-        return res.json();
+        }, false);
     },
 
     async clearTransactions() {
-        const res = await fetch(`${API_BASE}/api/transactions`, {
+        return cachedFetch(`${API_BASE}/api/transactions`, {
             method: 'DELETE'
-        });
-        return res.json();
+        }, false);
     },
 
     // ==================== EXPORT/IMPORT ====================
     async exportData() {
-        const res = await fetch(`${API_BASE}/api/export`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/export`);
     },
 
     async importData(data) {
-        const res = await fetch(`${API_BASE}/api/import`, {
+        return cachedFetch(`${API_BASE}/api/import`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
-        });
-        return res.json();
+        }, false);
     },
 
     // ==================== UTILITIES ====================
     async clearAllAmounts() {
-        const res = await fetch(`${API_BASE}/api/clear-amounts`, {
+        return cachedFetch(`${API_BASE}/api/clear-amounts`, {
             method: 'POST'
-        });
-        return res.json();
+        }, false);
     },
 
     async clearAllData() {
-        const res = await fetch(`${API_BASE}/api/clear-all`, {
+        return cachedFetch(`${API_BASE}/api/clear-all`, {
             method: 'POST'
-        });
-        return res.json();
+        }, false);
     },
 
     async getDbInfo() {
-        const res = await fetch(`${API_BASE}/api/db-info`);
-        return res.json();
+        return cachedFetch(`${API_BASE}/api/db-info`);
+    },
+
+    // Clear cache manually if needed
+    clearCache() {
+        apiCache.clear();
     }
 };
 
